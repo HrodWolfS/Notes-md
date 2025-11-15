@@ -70,7 +70,7 @@ func (m model) viewBrowser() string {
 		)
 	} else {
 		footer = helpStyle.Render(
-			"\n↑/↓ naviguer • ←/h parent • →/l/Enter entrer • o preview • j/k scroll • u/d scroll rapide • e éditer • n nouvelle note • / rechercher • t thème • q quitter\n",
+			"\n? aide • ↑/↓ naviguer • dd supprimer • r renommer • m filtre .md • n nouvelle note • / rechercher • q quitter\n",
 		)
 	}
 
@@ -88,10 +88,19 @@ func (m model) viewBrowser() string {
 
 	baseView := header + status + "\n" + layout + footer
 
-	// If modal is open, overlay it on top
-	if m.showModal {
-		modalView := m.modal.View()
+	// If any modal is open, overlay it on top
+	var modalView string
+	if m.showNoteModal {
+		modalView = m.noteModal.View()
+	} else if m.showConfirmModal {
+		modalView = m.confirmModal.View()
+	} else if m.showRenameModal {
+		modalView = m.renameModal.View()
+	} else if m.showHelpModal {
+		modalView = m.helpModal.View()
+	}
 
+	if modalView != "" {
 		// Center the modal on screen
 		w := m.width
 		h := m.height

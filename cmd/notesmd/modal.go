@@ -170,3 +170,213 @@ func (m noteModal) CreateNote(currentDir string) (string, error) {
 
 	return path, nil
 }
+
+// ========== Delete Confirmation Modal ==========
+
+type confirmModal struct {
+	message string
+	path    string
+}
+
+func newConfirmDeleteModal(path, itemName string) confirmModal {
+	return confirmModal{
+		message: fmt.Sprintf("Supprimer '%s' ?", itemName),
+		path:    path,
+	}
+}
+
+func (m confirmModal) View() string {
+	// Modal title
+	title := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("196")). // Red for danger
+		Bold(true).
+		Render("⚠️  Confirmation")
+
+	message := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("255")).
+		Render(m.message)
+
+	helpText := helpStyle.Render("y: confirmer • n/Esc: annuler")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Center,
+		title,
+		"",
+		message,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("196")). // Red border
+		Padding(1, 4).
+		Width(50)
+
+	return modalStyle.Render(content)
+}
+
+// ========== Rename Modal ==========
+
+type renameModal struct {
+	input    textinput.Model
+	oldPath  string
+	itemName string
+}
+
+func newRenameModal(path, currentName string) renameModal {
+	ti := textinput.New()
+	ti.Placeholder = "nouveau-nom"
+	ti.SetValue(currentName)
+	ti.Focus()
+	ti.CharLimit = 100
+	ti.Width = 50
+
+	// Select all text for easy replacement
+	ti.CursorEnd()
+
+	return renameModal{
+		input:    ti,
+		oldPath:  path,
+		itemName: currentName,
+	}
+}
+
+func (m renameModal) Update(msg tea.Msg) (renameModal, tea.Cmd) {
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return m, cmd
+}
+
+func (m renameModal) View() string {
+	title := titleStyle.Render("Renommer")
+
+	label := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Nouveau nom:")
+
+	inputField := m.input.View()
+
+	helpText := helpStyle.Render("Enter: confirmer • Esc: annuler")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		label,
+		inputField,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("208")).
+		Padding(1, 2).
+		Width(60)
+
+	return modalStyle.Render(content)
+}
+
+func (m renameModal) GetNewName() string {
+	return strings.TrimSpace(m.input.Value())
+}
+
+func (m renameModal) Rename() error {
+	newName := m.GetNewName()
+	if newName == "" || newName == m.itemName {
+		return fmt.Errorf("nom invalide ou inchangé")
+	}
+
+	dir := filepath.Dir(m.oldPath)
+	newPath := filepath.Join(dir, newName)
+
+	return os.Rename(m.oldPath, newPath)
+}
+
+// ========== Help Modal ==========
+
+type helpModal struct{}
+
+func newHelpModal() helpModal {
+	return helpModal{}
+}
+
+func (m helpModal) View() string {
+	title := titleStyle.Render("📖 Guide des raccourcis")
+
+	// Navigation section
+	navTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Navigation Vim:")
+	navContent := `  gg         → Aller au début
+  G          → Aller à la fin
+  Ctrl+d     → Page down (½ page)
+  Ctrl+u     → Page up (½ page)
+  -          → Dossier parent
+  ~          → Dossier home
+  ↑/↓ ou j/k → Naviguer dans la liste
+  ←/h        → Remonter au parent
+  →/l/Enter  → Entrer dans un dossier`
+
+	// File operations section
+	fileTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Actions fichiers:")
+	fileContent := `  n          → Nouvelle note (modal)
+  dd         → Supprimer (avec confirmation)
+  r          → Renommer
+  e          → Éditer dans $EDITOR`
+
+	// Filters section
+	filterTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Filtres & Recherche:")
+	filterContent := `  m          → Toggle .md uniquement
+  /          → Recherche globale fuzzy`
+
+	// Interface section
+	uiTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Interface:")
+	uiContent := `  o          → Toggle preview
+  j/k        → Scroll preview (↓/↑)
+  u/d        → Scroll rapide preview
+  t          → Changer thème
+  ?          → Afficher cette aide
+  q          → Quitter`
+
+	helpText := helpStyle.Render("Appuyez sur Esc ou ? pour fermer")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		navTitle,
+		navContent,
+		"",
+		fileTitle,
+		fileContent,
+		"",
+		filterTitle,
+		filterContent,
+		"",
+		uiTitle,
+		uiContent,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("81")). // Light blue
+		Padding(1, 2).
+		Width(70)
+
+	return modalStyle.Render(content)
+}

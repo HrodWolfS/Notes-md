@@ -63,6 +63,9 @@ type model struct {
 	searchActive bool
 	searchQuery  string
 
+	// filters
+	mdOnly bool // Show only .md files
+
 	// window size
 	width  int
 	height int
@@ -70,16 +73,45 @@ type model struct {
 	// theme
 	themeIndex int
 
-	// note creation modal
-	showModal bool
-	modal     noteModal
+	// modals
+	showNoteModal    bool
+	noteModal        noteModal
+	showConfirmModal bool
+	confirmModal     confirmModal
+	showRenameModal  bool
+	renameModal      renameModal
+	showHelpModal    bool
+	helpModal        helpModal
+
+	// vim-style navigation
+	lastKey       string
+	pendingDelete bool // for 'dd' double-tap
 }
 
 // setDir changes the current directory and updates the list
 func (m *model) setDir(dir string) {
 	m.currentDir = dir
 	m.baseItems = readDir(dir)
-	m.list.SetItems(m.baseItems)
+	m.applyFilters()
+}
+
+// applyFilters applies active filters to the file list
+func (m *model) applyFilters() {
+	if !m.mdOnly {
+		m.list.SetItems(m.baseItems)
+		return
+	}
+
+	// Filter to show only .md files and directories
+	var filtered []blist.Item
+	for _, item := range m.baseItems {
+		if fi, ok := item.(fileItem); ok {
+			if fi.isDir || filepath.Ext(fi.name) == ".md" {
+				filtered = append(filtered, item)
+			}
+		}
+	}
+	m.list.SetItems(filtered)
 }
 
 // ensureAllFilesScanned scans all files from rootDir if not already done
