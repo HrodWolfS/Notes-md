@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	tea "github.com/charmbracelet/bubbletea"
 	blist "github.com/charmbracelet/bubbles/list"
 	bviewport "github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {

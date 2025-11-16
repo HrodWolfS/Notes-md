@@ -21,9 +21,9 @@ type FilterConfig struct {
 }
 
 type SearchConfig struct {
-	IncludeContent    bool `json:"include_content"`
-	RespectGitignore  bool `json:"respect_gitignore"`
-	MaxRecentFiles    int  `json:"max_recent_files"`
+	IncludeContent   bool `json:"include_content"`
+	RespectGitignore bool `json:"respect_gitignore"`
+	MaxRecentFiles   int  `json:"max_recent_files"`
 }
 
 type SessionState struct {

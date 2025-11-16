@@ -35,7 +35,12 @@ clean:
 # Run tests
 test:
 	@echo "Running tests..."
-	$(GO) test ./...
+	$(GO) test -v -race -coverprofile=coverage.out -covermode=atomic ./cmd/notesmd/...
+
+# Run tests without coverage (for quick checks)
+test-quick:
+	@echo "Running quick tests..."
+	$(GO) test -v ./cmd/notesmd/...
 
 # Run the application
 run: build

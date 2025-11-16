@@ -114,38 +114,38 @@ type model struct {
 	themeIndex int
 
 	// modals
-	showNoteModal       bool
-	noteModal           noteModal
-	showConfirmModal    bool
-	confirmModal        confirmModal
-	showRenameModal     bool
-	renameModal         renameModal
-	showHelpModal       bool
-	helpModal           helpModal
-	showCreateDirModal  bool
-	createDirModal      createDirModal
-	showRecentModal     bool
-	recentModal         recentFilesModal
-	showBookmarksModal  bool
-	bookmarksModal      bookmarksModal
+	showNoteModal      bool
+	noteModal          noteModal
+	showConfirmModal   bool
+	confirmModal       confirmModal
+	showRenameModal    bool
+	renameModal        renameModal
+	showHelpModal      bool
+	helpModal          helpModal
+	showCreateDirModal bool
+	createDirModal     createDirModal
+	showRecentModal    bool
+	recentModal        recentFilesModal
+	showBookmarksModal bool
+	bookmarksModal     bookmarksModal
 
 	// configuration & persistence
-	config        *Config
-	recentFiles   []string
-	bookmarks     []string
+	config      *Config
+	recentFiles []string
+	bookmarks   []string
 
 	// file operations
 	clipboard     *FileClipboard
 	clipboardMode string
 
 	// status bar
-	statusBar     StatusBar
+	statusBar StatusBar
 
 	// in-note search
-	searchInNoteActive  bool
-	noteSearchQuery     string
-	currentNoteRaw      string // Raw markdown content of current note
-	currentNotePath     string
+	searchInNoteActive bool
+	noteSearchQuery    string
+	currentNoteRaw     string // Raw markdown content of current note
+	currentNotePath    string
 
 	// vim-style navigation
 	lastKey       string

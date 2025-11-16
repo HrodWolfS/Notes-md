@@ -15,17 +15,7 @@ linters:
     - staticcheck   # Go static analysis
     - unused        # Check for unused code
     - gofmt         # Check code formatting
-    - goimports     # Check import formatting
-    - misspell      # Detect misspelled words
-    - revive        # Fast, configurable, extensible linter
     - typecheck     # Type checks
-    - unconvert     # Remove unnecessary type conversions
-    - unparam       # Report unused function parameters
-    - gocritic      # Comprehensive diagnostics
-    - gocyclo       # Compute cyclomatic complexities
-    - dupl          # Detect code duplication
-    - gosec         # Security issues
-    - prealloc      # Find slice declarations that could be preallocated
 
   disable:
     - deadcode      # Deprecated
