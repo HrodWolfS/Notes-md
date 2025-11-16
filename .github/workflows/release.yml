@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v5
+      with:
+        distribution: goreleaser
+        version: latest
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Fallback: Manual build if GoReleaser is not configured
+  manual-release:
+    name: Manual Release Build
+    runs-on: ubuntu-latest
+    if: false  # Disabled by default, enable if not using GoReleaser
+
+    strategy:
+      matrix:
+        include:
+          # Linux
+          - os: linux
+            arch: amd64
+            name: nmd-linux-amd64
+          - os: linux
+            arch: arm64
+            name: nmd-linux-arm64
+          # macOS
+          - os: darwin
+            arch: amd64
+            name: nmd-darwin-amd64
+          - os: darwin
+            arch: arm64
+            name: nmd-darwin-arm64
+          # Windows
+          - os: windows
+            arch: amd64
+            name: nmd-windows-amd64.exe
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        go build -v -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o ${{ matrix.name }} ./cmd/notesmd
+
+    - name: Create checksum
+      run: |
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          sha256sum ${{ matrix.name }} > ${{ matrix.name }}.sha256
+        else
+          shasum -a 256 ${{ matrix.name }} > ${{ matrix.name }}.sha256
+        fi
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ${{ matrix.name }}
+          ${{ matrix.name }}.sha256
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

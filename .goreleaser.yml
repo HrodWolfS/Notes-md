@@ -1,0 +1,186 @@
+# GoReleaser configuration
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: nmd
+    binary: nmd
+    main: ./cmd/notesmd
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "7"
+    ignore:
+      # Remove unsupported combinations
+      - goos: darwin
+        goarch: arm
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+      - goos: freebsd
+        goarch: arm
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+archives:
+  - id: nmd-archive
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - QUICKSTART.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - 'merge conflict'
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: 'New Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 2
+    - title: 'Refactors'
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 3
+    - title: 'Documentation'
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 4
+    - title: 'Other Changes'
+      order: 999
+
+release:
+  github:
+    owner: hrodwolf
+    name: notesmd
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## NotesMD {{ .Tag }} 🎉
+
+    Welcome to this new release of NotesMD!
+
+  footer: |
+    ## Installation
+
+    ### Quick Install
+    ```bash
+    # Linux/macOS
+    curl -sSL https://raw.githubusercontent.com/hrodwolf/notesmd/main/install.sh | bash
+
+    # Or via Go
+    go install github.com/hrodwolf/notesmd/cmd/notesmd@latest
+    ```
+
+    ### Binary Download
+    Download the appropriate binary for your platform from the assets below.
+
+    ---
+    **Full Changelog**: https://github.com/hrodwolf/notesmd/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+# Homebrew formula (optional, for later)
+brews:
+  - name: nmd
+    repository:
+      owner: hrodwolf
+      name: homebrew-tap
+      branch: main
+    homepage: "https://github.com/hrodwolf/notesmd"
+    description: "Terminal-based Markdown notes browser with real-time preview"
+    license: "MIT"
+    skip_upload: auto
+    install: |
+      bin.install "nmd"
+    test: |
+      system "#{bin}/nmd", "--version"
+
+# Snapcraft (optional, for Linux Snap packages)
+# snapcrafts:
+#   - name: nmd
+#     summary: Terminal-based Markdown notes browser
+#     description: |
+#       NotesMD is an elegant and fast Markdown notes browser for the terminal.
+#       Features include real-time preview, fuzzy search, bookmarks, and more.
+#     grade: stable
+#     confinement: strict
+#     license: MIT
+#     apps:
+#       nmd:
+#         command: nmd
+
+# AUR package (optional, for Arch Linux)
+# aurs:
+#   - name: nmd-bin
+#     homepage: "https://github.com/hrodwolf/notesmd"
+#     description: "Terminal-based Markdown notes browser with real-time preview"
+#     maintainers:
+#       - "hrodwolf"
+#     license: "MIT"
+#     private_key: "{{ .Env.AUR_KEY }}"
+#     git_url: "ssh://aur@aur.archlinux.org/nmd-bin.git"
+
+# Docker images (optional)
+# dockers:
+#   - image_templates:
+#       - "ghcr.io/hrodwolf/notesmd:{{ .Version }}"
+#       - "ghcr.io/hrodwolf/notesmd:latest"
+#     dockerfile: Dockerfile
+#     build_flag_templates:
+#       - "--pull"
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"
+#     extra_files:
+#       - LICENSE
+#       - README.md

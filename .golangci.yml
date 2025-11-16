@@ -1,0 +1,87 @@
+# GolangCI-Lint configuration
+# Documentation: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Suggest code simplifications
+    - govet         # Reports suspicious constructs
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Go static analysis
+    - unused        # Check for unused code
+    - gofmt         # Check code formatting
+    - goimports     # Check import formatting
+    - misspell      # Detect misspelled words
+    - revive        # Fast, configurable, extensible linter
+    - typecheck     # Type checks
+    - unconvert     # Remove unnecessary type conversions
+    - unparam       # Report unused function parameters
+    - gocritic      # Comprehensive diagnostics
+    - gocyclo       # Compute cyclomatic complexities
+    - dupl          # Detect code duplication
+    - gosec         # Security issues
+    - prealloc      # Find slice declarations that could be preallocated
+
+  disable:
+    - deadcode      # Deprecated
+    - varcheck      # Deprecated
+    - structcheck   # Deprecated
+    - scopelint     # Deprecated
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    check-shadowing: true
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+    disabled-checks:
+      - unnamedResult
+      - hugeParam
+
+  misspell:
+    locale: US
+
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+
+    # Exclude known issues
+    - linters:
+        - gosec
+      text: "G304: Potential file inclusion via variable"
+
+output:
+  sort-results: true

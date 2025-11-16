@@ -1,5 +1,12 @@
 # NotesMD 📝
 
+[![CI](https://github.com/hrodwolf/notesmd/workflows/CI/badge.svg)](https://github.com/hrodwolf/notesmd/actions/workflows/ci.yml)
+[![Release](https://github.com/hrodwolf/notesmd/workflows/Release/badge.svg)](https://github.com/hrodwolf/notesmd/actions/workflows/release.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hrodwolf/notesmd)](https://goreportcard.com/report/github.com/hrodwolf/notesmd)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/hrodwolf/notesmd)](go.mod)
+[![Latest Release](https://img.shields.io/github/v/release/hrodwolf/notesmd)](https://github.com/hrodwolf/notesmd/releases/latest)
+
 > Un navigateur de notes Markdown élégant et rapide pour le terminal, construit avec Go et Bubble Tea.
 
 NotesMD est un explorateur de fichiers interactif spécialisé pour les notes Markdown. Il offre une prévisualisation en temps réel, une navigation intuitive de type Vim, et des fonctionnalités avancées comme la recherche, les signets et l'historique.
