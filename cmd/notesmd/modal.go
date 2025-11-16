@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	blist "github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
@@ -295,6 +296,216 @@ func (m renameModal) Rename() error {
 	return os.Rename(m.oldPath, newPath)
 }
 
+// ========== Create Directory Modal ==========
+
+type createDirModal struct {
+	input    textinput.Model
+	basePath string
+}
+
+func newCreateDirModal(basePath string) createDirModal {
+	ti := textinput.New()
+	ti.Placeholder = "nouveau-dossier"
+	ti.Focus()
+	ti.CharLimit = 100
+	ti.Width = 50
+
+	return createDirModal{
+		input:    ti,
+		basePath: basePath,
+	}
+}
+
+func (m createDirModal) Update(msg tea.Msg) (createDirModal, tea.Cmd) {
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return m, cmd
+}
+
+func (m createDirModal) View() string {
+	title := titleStyle.Render("Nouveau Dossier")
+
+	label := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Nom du dossier:")
+
+	inputField := m.input.View()
+
+	helpText := helpStyle.Render("Enter: créer • Esc: annuler")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		label,
+		inputField,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("208")).
+		Padding(1, 2).
+		Width(60)
+
+	return modalStyle.Render(content)
+}
+
+func (m createDirModal) GetDirName() string {
+	return strings.TrimSpace(m.input.Value())
+}
+
+func (m createDirModal) CreateDir() (string, error) {
+	name := m.GetDirName()
+	if name == "" {
+		return "", fmt.Errorf("le nom ne peut pas être vide")
+	}
+
+	path := filepath.Join(m.basePath, name)
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
+// ========== Recent Files Modal ==========
+
+type recentFilesModal struct {
+	list blist.Model
+}
+
+func newRecentFilesModal(recentFiles []string, width, height int) recentFilesModal {
+	items := make([]blist.Item, 0, len(recentFiles))
+	for _, path := range recentFiles {
+		info, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+
+		items = append(items, fileItem{
+			name:    filepath.Base(path),
+			path:    path,
+			isDir:   false,
+			size:    info.Size(),
+			modTime: info.ModTime().Unix(),
+		})
+	}
+
+	l := blist.New(items, blist.NewDefaultDelegate(), width-10, height-10)
+	l.Title = "Recent Files"
+	l.SetShowHelp(false)
+
+	return recentFilesModal{
+		list: l,
+	}
+}
+
+func (m recentFilesModal) Update(msg tea.Msg) (recentFilesModal, tea.Cmd) {
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
+}
+
+func (m recentFilesModal) View() string {
+	title := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("212")).
+		Bold(true).
+		Render("📋 Recent Files")
+
+	listView := m.list.View()
+
+	helpText := helpStyle.Render("Enter: open • Esc: close")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		listView,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("212")).
+		Padding(1, 2).
+		Width(70)
+
+	return modalStyle.Render(content)
+}
+
+// ========== Bookmarks Modal ==========
+
+type bookmarksModal struct {
+	list blist.Model
+}
+
+func newBookmarksModal(bookmarks []string, width, height int) bookmarksModal {
+	items := make([]blist.Item, 0, len(bookmarks))
+	for _, path := range bookmarks {
+		info, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+
+		item := fileItem{
+			name:    filepath.Base(path),
+			path:    path,
+			isDir:   info.IsDir(),
+			size:    info.Size(),
+			modTime: info.ModTime().Unix(),
+		}
+
+		items = append(items, item)
+	}
+
+	l := blist.New(items, blist.NewDefaultDelegate(), width-10, height-10)
+	l.Title = "Bookmarks"
+	l.SetShowHelp(false)
+
+	return bookmarksModal{
+		list: l,
+	}
+}
+
+func (m bookmarksModal) Update(msg tea.Msg) (bookmarksModal, tea.Cmd) {
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
+}
+
+func (m bookmarksModal) View() string {
+	title := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("212")).
+		Bold(true).
+		Render("★ Bookmarks")
+
+	listView := m.list.View()
+
+	helpText := helpStyle.Render("Enter: open • d: remove • Esc: close")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		listView,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("212")).
+		Padding(1, 2).
+		Width(70)
+
+	return modalStyle.Render(content)
+}
+
 // ========== Help Modal ==========
 
 type helpModal struct{}
@@ -304,64 +515,58 @@ func newHelpModal() helpModal {
 }
 
 func (m helpModal) View() string {
-	title := titleStyle.Render("📖 Guide des raccourcis")
+	title := titleStyle.Render("📖 Raccourcis")
 
 	// Navigation section
 	navTitle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
-		Render("Navigation Vim:")
-	navContent := `  gg         → Aller au début
-  G          → Aller à la fin
-  Ctrl+d     → Page down (½ page)
-  Ctrl+u     → Page up (½ page)
-  -          → Dossier parent
-  ~          → Dossier home
-  ↑/↓ ou j/k → Naviguer dans la liste
-  ←/h        → Remonter au parent
-  →/l/Enter  → Entrer dans un dossier`
+		Render("Navigation:")
+	navContent := `j/k/↑/↓: liste | gg: début | G: fin | Ctrl+d/u: page
+Ctrl+o/i: historique | -: parent | ~: home | h/l: ←/→`
 
 	// File operations section
 	fileTitle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
-		Render("Actions fichiers:")
-	fileContent := `  n          → Nouvelle note (modal)
-  dd         → Supprimer (avec confirmation)
-  r          → Renommer
-  e          → Éditer dans $EDITOR`
+		Render("Fichiers:")
+	fileContent := `n: nouvelle note | N: dossier | D: supprimer | r: renommer
+e: éditer | c: copier | p: coller | y: path | Y: contenu`
+
+	// Organization section
+	orgTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Organisation:")
+	orgContent := `b: bookmark | B: voir bookmarks | Ctrl+R: récents`
 
 	// Filters section
 	filterTitle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
-		Render("Filtres & Recherche:")
-	filterContent := `  m          → Toggle .md uniquement
-  /          → Recherche globale fuzzy`
+		Render("Filtres:")
+	filterContent := `m: .md only | .: hidden | s: tri | /: nom | F: note`
 
 	// Interface section
 	uiTitle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
 		Render("Interface:")
-	uiContent := `  o          → Toggle preview
-  j/k        → Scroll preview (↓/↑)
-  u/d        → Scroll rapide preview
-  t          → Changer thème
-  ?          → Afficher cette aide
-  q          → Quitter`
+	uiContent := `u/d: scroll | t: thème | ?: aide | q: quitter`
 
-	helpText := helpStyle.Render("Appuyez sur Esc ou ? pour fermer")
+	helpText := helpStyle.Render("Esc ou ? pour fermer")
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
-		"",
 		navTitle,
 		navContent,
 		"",
 		fileTitle,
 		fileContent,
+		"",
+		orgTitle,
+		orgContent,
 		"",
 		filterTitle,
 		filterContent,
@@ -375,8 +580,8 @@ func (m helpModal) View() string {
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("81")). // Light blue
-		Padding(1, 2).
-		Width(70)
+		Padding(0, 1).
+		Width(68)
 
 	return modalStyle.Render(content)
 }

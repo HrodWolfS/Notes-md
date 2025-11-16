@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -101,5 +102,95 @@ func (m *model) handleRenameModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd)
 	// Let modal handle the key
 	var modalCmd tea.Cmd
 	m.renameModal, modalCmd = m.renameModal.Update(msg)
+	return true, modalCmd
+}
+
+func (m *model) handleCreateDirModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
+	s := msg.String()
+
+	switch s {
+	case "esc":
+		m.showCreateDirModal = false
+		m.createDirModal = createDirModal{}
+		return true, nil
+
+	case "enter":
+		_, err := m.createDirModal.CreateDir()
+		if err == nil {
+			m.baseItems = readDir(m.currentDir)
+			m.applyFilters()
+		}
+		m.showCreateDirModal = false
+		m.createDirModal = createDirModal{}
+		return true, nil
+	}
+
+	var modalCmd tea.Cmd
+	m.createDirModal, modalCmd = m.createDirModal.Update(msg)
+	return true, modalCmd
+}
+
+func (m *model) handleRecentModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
+	s := msg.String()
+
+	switch s {
+	case "esc":
+		m.showRecentModal = false
+		return true, nil
+
+	case "enter":
+		if it, ok := m.recentModal.list.SelectedItem().(fileItem); ok {
+			targetDir := filepath.Dir(it.path)
+			m.setDir(targetDir)
+
+			for i, item := range m.baseItems {
+				if fi, ok := item.(fileItem); ok && fi.path == it.path {
+					m.list.Select(i)
+					break
+				}
+			}
+			m.showRecentModal = false
+			return true, nil
+		}
+	}
+
+	var modalCmd tea.Cmd
+	m.recentModal, modalCmd = m.recentModal.Update(msg)
+	return true, modalCmd
+}
+
+func (m *model) handleBookmarksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
+	s := msg.String()
+
+	switch s {
+	case "esc":
+		m.showBookmarksModal = false
+		return true, nil
+
+	case "enter":
+		if it, ok := m.bookmarksModal.list.SelectedItem().(fileItem); ok {
+			targetDir := filepath.Dir(it.path)
+			m.setDir(targetDir)
+
+			for i, item := range m.baseItems {
+				if fi, ok := item.(fileItem); ok && fi.path == it.path {
+					m.list.Select(i)
+					break
+				}
+			}
+			m.showBookmarksModal = false
+			return true, nil
+		}
+
+	case "D":
+		if it, ok := m.bookmarksModal.list.SelectedItem().(fileItem); ok {
+			m.toggleBookmark(it.path)
+			m.bookmarksModal = newBookmarksModal(m.bookmarks, m.width, m.height)
+			return true, nil
+		}
+	}
+
+	var modalCmd tea.Cmd
+	m.bookmarksModal, modalCmd = m.bookmarksModal.Update(msg)
 	return true, modalCmd
 }

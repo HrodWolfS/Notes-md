@@ -1,13 +1,43 @@
 package main
 
 import (
-	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
+// renderBreadcrumb creates a breadcrumb path display
+func renderBreadcrumb(currentPath string, accent lipgloss.Color) string {
+	parts := strings.Split(currentPath, string(filepath.Separator))
+	var crumbs []string
+
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+		if i == len(parts)-1 {
+			style = lipgloss.NewStyle().
+				Foreground(accent).
+				Bold(true)
+		}
+
+		crumbs = append(crumbs, style.Render(part))
+	}
+
+	separator := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Render(" → ")
+
+	return strings.Join(crumbs, separator)
+}
+
 // viewBrowser renders the file browser view
 func (m model) viewBrowser() string {
+	m.updateStatusBar()
+
 	// Dynamic styles based on current accent color
 	ts := titleStyle
 	sl := searchLabelStyle
@@ -20,7 +50,7 @@ func (m model) viewBrowser() string {
 	}
 
 	header := ts.Render("\nExplorateur de notes") + "\n\n"
-	header += fmt.Sprintf("Dossier : %s\n\n", m.currentDir)
+	header += renderBreadcrumb(m.currentDir, accent) + "\n\n"
 
 	// Total width known by the model
 	totalWidth := m.width
@@ -61,7 +91,14 @@ func (m model) viewBrowser() string {
 	layout := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 
 	var footer string
-	if m.searchActive {
+	if m.searchInNoteActive {
+		footer = helpStyle.Render(
+			"\n" +
+				sl.Render("Rechercher dans la note: ") +
+				searchQueryStyle.Render(m.noteSearchQuery) +
+				"\nMises à jour en temps réel • ↑/↓ ou Ctrl+u/d pour naviguer • ESC pour annuler\n",
+		)
+	} else if m.searchActive {
 		footer = helpStyle.Render(
 			"\n" +
 				sl.Render("Search: ") +
@@ -70,23 +107,14 @@ func (m model) viewBrowser() string {
 		)
 	} else {
 		footer = helpStyle.Render(
-			"\n? aide • ↑/↓ naviguer • dd supprimer • r renommer • m filtre .md • n nouvelle note • / rechercher • q quitter\n",
+			"\n? aide • ↑/↓ naviguer • D supprimer • r renommer • m filtre .md • n nouvelle note • / rechercher • F recherche note • q quitter\n",
 		)
 	}
 
-	// Status bar: current folder + item count + mode
-	modeLabel := "browse"
-	if m.searchActive {
-		modeLabel = "search"
-	}
+	// Status bar using custom component
+	statusBar := m.statusBar.View()
 
-	itemCount := len(m.list.Items())
-	status := statusBarStyle.
-		Background(accent).
-		Foreground(lipgloss.Color("0")).
-		Render(fmt.Sprintf(" %s | %d éléments | mode: %s ", m.currentDir, itemCount, modeLabel))
-
-	baseView := header + status + "\n" + layout + footer
+	baseView := header + layout + "\n" + statusBar + footer
 
 	// If any modal is open, overlay it on top
 	var modalView string
@@ -96,6 +124,12 @@ func (m model) viewBrowser() string {
 		modalView = m.confirmModal.View()
 	} else if m.showRenameModal {
 		modalView = m.renameModal.View()
+	} else if m.showCreateDirModal {
+		modalView = m.createDirModal.View()
+	} else if m.showRecentModal {
+		modalView = m.recentModal.View()
+	} else if m.showBookmarksModal {
+		modalView = m.bookmarksModal.View()
 	} else if m.showHelpModal {
 		modalView = m.helpModal.View()
 	}

@@ -7,21 +7,12 @@ import (
 // viewHome renders the home/welcome screen
 func (m model) viewHome() string {
 	shortcuts := `
-Raccourcis :
+Bienvenue dans NotesMD
 
-  q          → quitter
-  ENTER      → ouvrir l'explorateur de notes
-  t          → changer la couleur d'accent
-  n          → créer une nouvelle note rapide
-
-  ↑ / ↓      → naviguer dans la liste
-  ← / h      → remonter au dossier parent
-  → / l / ↵  → entrer dans un dossier
-  o          → ouvrir / fermer la prévisualisation
-  j / k      → scroller la prévisualisation (bas / haut)
-  u / d      → scroll rapide (haut / bas)
-  e          → éditer la note dans $EDITOR (Neovim)
-  /          → recherche globale fuzzy (style Finder) depuis le dossier de départ
+  ENTER      → Ouvrir l'explorateur de notes
+  ?          → Afficher tous les raccourcis
+  t          → Changer le thème
+  q          → Quitter
 `
 
 	// Dynamic accent color
@@ -48,12 +39,33 @@ Raccourcis :
 		h = 40
 	}
 
-	// Center the card on screen
-	return lipgloss.Place(
+	// Base view
+	baseView := lipgloss.Place(
 		w,
 		h,
 		lipgloss.Center,
 		lipgloss.Center,
 		card,
 	)
+
+	// Handle modals (overlay on top of base view)
+	var modalView string
+	if m.showHelpModal {
+		modalView = m.helpModal.View()
+	}
+
+	if modalView != "" {
+		overlayedModal := lipgloss.Place(
+			w,
+			h,
+			lipgloss.Center,
+			lipgloss.Center,
+			modalView,
+			lipgloss.WithWhitespaceChars(" "),
+			lipgloss.WithWhitespaceForeground(lipgloss.Color("0")),
+		)
+		return overlayedModal
+	}
+
+	return baseView
 }

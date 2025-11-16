@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -46,6 +47,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(fmt.Sprintf("Erreur lors de l'ouverture de l'éditeur :\n\n%s", string(msg)))
 		return m, nil
 
+	// Clipboard copied
+	case clipboardCopiedMsg:
+		cmd := m.statusBar.SetMessage(msg.message, 2*time.Second)
+		return m, cmd
+
+	// Paste completed
+	case pasteCompletedMsg:
+		if msg.success {
+			m.setDir(m.currentDir)
+		}
+		cmd := m.statusBar.SetMessage(msg.message, 2*time.Second)
+		return m, cmd
+
+	// Content search completed (deprecated - using in-note search now)
+	// case searchCompletedMsg:
+	// 	m.searchResults = msg.results
+	// 	m.contentSearchActive = false
+	// 	if len(msg.results) > 0 {
+	// 		items := make([]blist.Item, len(msg.results))
+	// 		for i, result := range msg.results {
+	// 			items[i] = searchResultItem{result: result}
+	// 		}
+	// 		m.list.SetItems(items)
+	// 	}
+	// 	return m, nil
+
 	// Key handling
 	case tea.KeyMsg:
 		switch m.mode {
@@ -63,7 +90,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // updateHome handles updates for home screen
 func (m model) updateHome(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Handle help modal
+	if m.showHelpModal {
+		if msg.String() == "esc" || msg.String() == "?" {
+			m.showHelpModal = false
+			return m, nil
+		}
+		return m, nil
+	}
+
 	switch msg.String() {
+	case "?":
+		m.showHelpModal = true
+		m.helpModal = newHelpModal()
 	case "enter":
 		m.mode = modeBrowser
 		m.setDir(m.rootDir)
@@ -108,8 +147,36 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	if m.showCreateDirModal {
+		handled, cmd := m.handleCreateDirModalKey(msg)
+		if handled {
+			return m, cmd
+		}
+	}
+
+	if m.showRecentModal {
+		handled, cmd := m.handleRecentModalKey(msg)
+		if handled {
+			return m, cmd
+		}
+	}
+
+	if m.showBookmarksModal {
+		handled, cmd := m.handleBookmarksModalKey(msg)
+		if handled {
+			return m, cmd
+		}
+	}
+
 	if m.searchActive {
 		handled, cmd := m.handleSearchKey(msg)
+		if handled {
+			return m, cmd
+		}
+	}
+
+	if m.searchInNoteActive {
+		handled, cmd := m.handleNoteSearchKey(msg)
 		if handled {
 			return m, cmd
 		}
@@ -136,8 +203,9 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if it, ok := m.list.SelectedItem().(fileItem); ok {
 			if it.isDir {
 				m.setDir(it.path)
-				m.showPreview = false
-				m.viewport.SetContent("Appuie sur 'o' pour prévisualiser un fichier Markdown.")
+			} else {
+				m.trackRecentFile(it.path)
+				m.currentNotePath = it.path
 			}
 		}
 
@@ -148,26 +216,7 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		parent := filepath.Dir(m.currentDir)
 		if parent != m.currentDir {
 			m.setDir(parent)
-			m.showPreview = false
-			m.viewport.SetContent("Appuie sur 'o' pour prévisualiser un fichier Markdown.")
 		}
-
-	case "o":
-		if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
-			if m.showPreview {
-				m.showPreview = false
-				m.viewport.SetContent("Appuie sur 'o' pour prévisualiser un fichier Markdown.")
-			} else {
-				content := loadMarkdown(it.path)
-				m.viewport.SetContent(content)
-				m.showPreview = true
-			}
-		}
-
-	case "k":
-		m.viewport.LineUp(1)
-	case "j":
-		m.viewport.LineDown(1)
 
 	// Vim-style navigation
 	case "g":
@@ -213,19 +262,39 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.list.Select(newIndex)
 		m.lastKey = ""
 
-	// File operations
-	case "d":
-		// Handle 'dd' to delete
-		if m.lastKey == "d" {
-			m.lastKey = ""
-			if it, ok := m.list.SelectedItem().(fileItem); ok {
-				m.showConfirmModal = true
-				m.confirmModal = newConfirmDeleteModal(it.path, it.name)
-			}
-			return m, nil
+	case "ctrl+o":
+		// Navigate back in history
+		m.navBack()
+		m.lastKey = ""
+
+	case "ctrl+i":
+		// Navigate forward in history
+		m.navForward()
+		m.lastKey = ""
+
+	// Preview scrolling
+	case "u":
+		// Scroll preview up
+		if m.showPreview {
+			m.viewport.LineUp(3)
 		}
-		m.lastKey = "d"
-		return m, nil
+		m.lastKey = ""
+
+	case "d":
+		// Scroll preview down
+		if m.showPreview {
+			m.viewport.LineDown(3)
+		}
+		m.lastKey = ""
+
+	// File operations
+	case "D":
+		// Delete file/folder with confirmation
+		if it, ok := m.list.SelectedItem().(fileItem); ok {
+			m.showConfirmModal = true
+			m.confirmModal = newConfirmDeleteModal(it.path, it.name)
+		}
+		m.lastKey = ""
 
 	case "r":
 		// Rename file/folder
@@ -265,6 +334,18 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.applyFilters()
 		m.lastKey = ""
 
+	case ".":
+		// Toggle hidden files
+		m.showHidden = !m.showHidden
+		m.applyFilters()
+		m.lastKey = ""
+
+	case "s":
+		// Cycle through sort modes: name -> date -> size -> name
+		m.sortMode = (m.sortMode + 1) % 3
+		m.applyFilters()
+		m.lastKey = ""
+
 	case "-":
 		// Navigate to parent directory
 		if m.searchActive {
@@ -273,8 +354,6 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		parent := filepath.Dir(m.currentDir)
 		if parent != m.currentDir {
 			m.setDir(parent)
-			m.showPreview = false
-			m.viewport.SetContent("Appuie sur 'o' pour prévisualiser un fichier Markdown.")
 		}
 		m.lastKey = ""
 
@@ -287,10 +366,85 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if err == nil {
 			m.setDir(home)
 			m.rootDir = home
-			m.showPreview = false
-			m.viewport.SetContent("Appuie sur 'o' pour prévisualiser un fichier Markdown.")
 		}
 		m.lastKey = ""
+
+	case "y":
+		// Copy file path to clipboard
+		if it, ok := m.list.SelectedItem().(fileItem); ok {
+			msg := copyFilePath(it.path)
+			cmd := m.statusBar.SetMessage(msg.message, 2*time.Second)
+			return m, cmd
+		}
+		m.lastKey = ""
+
+	case "Y":
+		// Copy file content to clipboard
+		if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
+			msg := copyFileContent(it.path)
+			cmd := m.statusBar.SetMessage(msg.message, 2*time.Second)
+			return m, cmd
+		}
+		m.lastKey = ""
+
+	case "N":
+		// Create new directory
+		m.showCreateDirModal = true
+		m.createDirModal = newCreateDirModal(m.currentDir)
+		m.lastKey = ""
+		return m, nil
+
+	case "c":
+		// Copy file (to internal clipboard)
+		if it, ok := m.list.SelectedItem().(fileItem); ok {
+			m.clipboard = &FileClipboard{path: it.path, mode: "copy"}
+			cmd := m.statusBar.SetMessage("Copied: "+it.name, 2*time.Second)
+			return m, cmd
+		}
+		m.lastKey = ""
+
+	case "p":
+		// Paste file
+		if m.clipboard != nil {
+			return m, pasteFile(m.clipboard, m.currentDir)
+		}
+		m.lastKey = ""
+
+	case "b":
+		// Toggle bookmark on current file
+		if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
+			added := m.toggleBookmark(it.path)
+			message := "Bookmark removed"
+			if added {
+				message = "Bookmark added"
+			}
+			cmd := m.statusBar.SetMessage(message, 2*time.Second)
+			return m, cmd
+		}
+		m.lastKey = ""
+
+	case "B":
+		// Show all bookmarks
+		m.showBookmarksModal = true
+		m.bookmarksModal = newBookmarksModal(m.bookmarks, m.width, m.height)
+		m.lastKey = ""
+		return m, nil
+
+	case "ctrl+r":
+		// Show recent files
+		m.showRecentModal = true
+		m.recentModal = newRecentFilesModal(m.recentFiles, m.width, m.height)
+		m.lastKey = ""
+		return m, nil
+
+	case "F":
+		// Start in-note search (only if a note is open)
+		if m.showPreview && m.currentNotePath != "" {
+			m.searchInNoteActive = true
+			m.noteSearchQuery = ""
+			m.lastKey = ""
+		}
+		return m, nil
 
 	case "/":
 		m.searchActive = true
@@ -303,6 +457,21 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
+
+	// Auto-preview on selection change
+	if m.autoPreview {
+		currentIndex := m.list.Index()
+		if currentIndex != m.lastSelectedIndex {
+			m.lastSelectedIndex = currentIndex
+			if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
+				content := loadMarkdown(it.path)
+				m.viewport.SetContent(content)
+				m.showPreview = true
+				m.currentNotePath = it.path
+			}
+		}
+	}
+
 	return m, cmd
 }
 
@@ -344,6 +513,54 @@ func (m *model) handleSearchKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
 	if len(s) == 1 && s >= " " && s <= "~" {
 		m.searchQuery += s
 		m.buildSearchResults()
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// handleNoteSearchKey handles keyboard input during in-note search
+func (m *model) handleNoteSearchKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
+	s := msg.String()
+
+	switch s {
+
+	case "esc":
+		// Cancel search and restore original content
+		m.searchInNoteActive = false
+		if m.currentNotePath != "" {
+			content := loadMarkdown(m.currentNotePath)
+			m.viewport.SetContent(content)
+		}
+		m.noteSearchQuery = ""
+		return true, nil
+
+	case "backspace", "backspace2":
+		if len(m.noteSearchQuery) > 0 {
+			m.noteSearchQuery = m.noteSearchQuery[:len(m.noteSearchQuery)-1]
+			// Live update on backspace
+			if m.currentNotePath != "" {
+				content := loadMarkdownWithHighlight(m.currentNotePath, m.noteSearchQuery)
+				m.viewport.SetContent(content)
+			}
+		}
+		return true, nil
+
+	// Allow viewport navigation during search (arrows and Ctrl keys only)
+	case "up", "down", "pgup", "pgdown", "ctrl+u", "ctrl+d":
+		var viewportCmd tea.Cmd
+		m.viewport, viewportCmd = m.viewport.Update(msg)
+		return true, viewportCmd
+	}
+
+	// Add character to search query
+	if len(s) == 1 && s >= " " && s <= "~" {
+		m.noteSearchQuery += s
+		// Live update as user types
+		if m.currentNotePath != "" {
+			content := loadMarkdownWithHighlight(m.currentNotePath, m.noteSearchQuery)
+			m.viewport.SetContent(content)
+		}
 		return true, nil
 	}
 
