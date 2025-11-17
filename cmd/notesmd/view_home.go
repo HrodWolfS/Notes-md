@@ -6,15 +6,6 @@ import (
 
 // viewHome renders the home/welcome screen
 func (m model) viewHome() string {
-	shortcuts := `
-Bienvenue dans NotesMD
-
-  ENTER      → Ouvrir l'explorateur de notes
-  ?          → Afficher tous les raccourcis
-  t          → Changer le thème
-  q          → Quitter
-`
-
 	// Dynamic accent color
 	ts := titleStyle
 	accent := lipgloss.Color("208")
@@ -24,7 +15,24 @@ Bienvenue dans NotesMD
 		ts = ts.Foreground(accent)
 	}
 
-	content := ts.Render(asciiTitle) + helpStyle.Render(shortcuts)
+	// Style for NOTES.md in blue
+	notesStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("81")). // blue
+		Bold(true)
+
+	// Build content with proper alignment
+	title := ts.Render(asciiTitle)
+	notesText := notesStyle.Render("NOTES.md")
+	helpText := helpStyle.Render("Press any key to continue")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		notesText,
+		helpText,
+	)
+
 	card := cardStyle.
 		BorderForeground(accent).
 		Render(content)

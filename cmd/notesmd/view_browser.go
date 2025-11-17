@@ -80,7 +80,7 @@ func (m model) viewBrowser() string {
 	if m.showPreview {
 		rightContent = m.viewport.View()
 	} else {
-		rightContent = "Appuie sur 'o' pour prévisualiser un fichier Markdown."
+		rightContent = "Preview masqué. Appuie sur 'o' pour afficher."
 	}
 
 	right := borderStyle.

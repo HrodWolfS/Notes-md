@@ -13,7 +13,7 @@ const asciiTitle = `
 ██║ ╚████║╚██████╔╝   ██║   ███████╗███████║
 ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚══════╝╚══════╝
 
-                N O T E S . m d
+            	CLI NOTES MANAGER 
 `
 
 // Color palette for theme cycling
@@ -42,7 +42,7 @@ var (
 	cardStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("208")). // orange-ish, same as logo
-			Padding(1, 4).
+			Padding(1, 6).
 			Align(lipgloss.Center)
 
 	statusBarStyle = lipgloss.NewStyle().
