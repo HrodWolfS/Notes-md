@@ -128,21 +128,20 @@ release:
     ---
     **Full Changelog**: https://github.com/HrodWolfS/Notes-md/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-# Homebrew formula (optional, for later)
-brews:
-  - name: nmd
-    repository:
-      owner: HrodWolfS
-      name: homebrew-tap
-      branch: main
-    homepage: "https://github.com/HrodWolfS/Notes-md"
-    description: "Terminal-based Markdown notes browser with real-time preview"
-    license: "MIT"
-    skip_upload: true  # Désactivé jusqu'à création du repo homebrew-tap
-    install: |
-      bin.install "nmd"
-    test: |
-      system "#{bin}/nmd", "--version"
+# Homebrew formula (désactivé - décommenter après création du repo homebrew-tap)
+# brews:
+#   - name: nmd
+#     repository:
+#       owner: HrodWolfS
+#       name: homebrew-tap
+#       branch: main
+#     homepage: "https://github.com/HrodWolfS/Notes-md"
+#     description: "Terminal-based Markdown notes browser with real-time preview"
+#     license: "MIT"
+#     install: |
+#       bin.install "nmd"
+#     test: |
+#       system "#{bin}/nmd", "--version"
 
 # Snapcraft (optional, for Linux Snap packages)
 # snapcrafts:
