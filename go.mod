@@ -1,4 +1,4 @@
-module github.com/hrodwolf/notesmd
+module github.com/HrodWolfS/Notes-md
 
 go 1.24.0
 
