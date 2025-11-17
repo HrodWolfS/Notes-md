@@ -130,6 +130,8 @@ type model struct {
 	bookmarksModal     bookmarksModal
 	showLinksModal     bool
 	linksModal         linksModal
+	showEditModal      bool
+	editModal          editModal
 
 	// configuration & persistence
 	config      *Config

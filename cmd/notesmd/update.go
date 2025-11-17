@@ -117,6 +117,13 @@ func (m model) updateHome(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // updateBrowser handles updates for browser mode
 func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// If any modal is open, handle that first
+	if m.showEditModal {
+		handled, cmd := m.handleEditModalKey(msg)
+		if handled {
+			return m, cmd
+		}
+	}
+
 	if m.showNoteModal {
 		handled, cmd := m.handleNoteModalKey(msg)
 		if handled {
@@ -315,6 +322,16 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
 			return m, openInEditor(it.path)
 		}
+
+	case "E":
+		// Quick inline edit
+		if m.currentNotePath != "" && filepath.Ext(m.currentNotePath) == ".md" {
+			rawContent := loadMarkdownRaw(m.currentNotePath)
+			m.showEditModal = true
+			m.editModal = newEditModal(m.currentNotePath, rawContent, m.width, m.height)
+		}
+		m.lastKey = ""
+		return m, nil
 
 	case "t":
 		m.toggleTheme()

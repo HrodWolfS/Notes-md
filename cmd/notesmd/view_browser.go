@@ -118,7 +118,9 @@ func (m model) viewBrowser() string {
 
 	// If any modal is open, overlay it on top
 	var modalView string
-	if m.showNoteModal {
+	if m.showEditModal {
+		modalView = m.editModal.View()
+	} else if m.showNoteModal {
 		modalView = m.noteModal.View()
 	} else if m.showConfirmModal {
 		modalView = m.confirmModal.View()

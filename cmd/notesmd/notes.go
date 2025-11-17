@@ -198,6 +198,39 @@ func (m *model) handleBookmarksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.C
 	return true, modalCmd
 }
 
+func (m *model) handleEditModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
+	s := msg.String()
+
+	switch s {
+	case "esc":
+		m.showEditModal = false
+		return true, nil
+
+	case "ctrl+s":
+		// Save the edited content
+		newContent := m.editModal.GetContent()
+		err := os.WriteFile(m.editModal.notePath, []byte(newContent), 0644)
+		if err != nil {
+			cmd := m.statusBar.SetMessage(fmt.Sprintf("Erreur: %v", err), 3*time.Second)
+			return true, cmd
+		}
+
+		// Refresh the preview
+		m.currentNoteRaw = newContent
+		content := loadMarkdownWithLinks(m.editModal.notePath, m.rootDir)
+		m.viewport.SetContent(content)
+
+		// Close modal and show success message
+		m.showEditModal = false
+		cmd = m.statusBar.SetMessage("✓ Note sauvegardée", 2*time.Second)
+		return true, cmd
+	}
+
+	var modalCmd tea.Cmd
+	m.editModal, modalCmd = m.editModal.Update(msg)
+	return true, modalCmd
+}
+
 func (m *model) handleLinksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
 	s := msg.String()
 

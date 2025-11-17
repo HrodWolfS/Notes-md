@@ -531,7 +531,7 @@ Ctrl+o/i: historique | -: parent | ~: home | h/l: ←/→`
 		Bold(true).
 		Render("Fichiers:")
 	fileContent := `n: nouvelle note | N: dossier | D: supprimer | r: renommer
-e: éditer | c: copier | p: coller | y: path | Y: contenu`
+e: éditeur externe | E: édition rapide | c: copier | p: coller | y: path | Y: contenu`
 
 	// Organization section
 	orgTitle := lipgloss.NewStyle().
@@ -584,6 +584,77 @@ e: éditer | c: copier | p: coller | y: path | Y: contenu`
 		Width(68)
 
 	return modalStyle.Render(content)
+}
+
+// ========== Edit Modal ==========
+
+type editModal struct {
+	textarea textarea.Model
+	notePath string
+	width    int
+	height   int
+}
+
+func newEditModal(notePath string, content string, width, height int) editModal {
+	ta := textarea.New()
+	ta.Placeholder = "Éditez votre note en Markdown..."
+	ta.ShowLineNumbers = true
+	ta.CharLimit = 50000
+
+	// Use most of the screen for editing
+	ta.SetWidth(width - 20)
+	ta.SetHeight(height - 15)
+	ta.SetValue(content)
+	ta.Focus()
+
+	return editModal{
+		textarea: ta,
+		notePath: notePath,
+		width:    width,
+		height:   height,
+	}
+}
+
+func (m editModal) Update(msg tea.Msg) (editModal, tea.Cmd) {
+	var cmd tea.Cmd
+	m.textarea, cmd = m.textarea.Update(msg)
+	return m, cmd
+}
+
+func (m editModal) View() string {
+	title := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("✏️  Édition Rapide")
+
+	filename := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("81")).
+		Render(filepath.Base(m.notePath))
+
+	textareaView := m.textarea.View()
+
+	helpText := helpStyle.Render("Ctrl+S: sauvegarder • Esc: annuler")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		filename,
+		"",
+		textareaView,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("213")).
+		Padding(1, 2)
+
+	return modalStyle.Render(content)
+}
+
+func (m editModal) GetContent() string {
+	return m.textarea.Value()
 }
 
 // ========== Links Modal ==========
