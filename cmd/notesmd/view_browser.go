@@ -130,6 +130,8 @@ func (m model) viewBrowser() string {
 		modalView = m.recentModal.View()
 	} else if m.showBookmarksModal {
 		modalView = m.bookmarksModal.View()
+	} else if m.showLinksModal {
+		modalView = m.linksModal.View()
 	} else if m.showHelpModal {
 		modalView = m.helpModal.View()
 	}

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -192,5 +195,78 @@ func (m *model) handleBookmarksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.C
 
 	var modalCmd tea.Cmd
 	m.bookmarksModal, modalCmd = m.bookmarksModal.Update(msg)
+	return true, modalCmd
+}
+
+func (m *model) handleLinksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
+	s := msg.String()
+
+	switch s {
+	case "esc":
+		m.showLinksModal = false
+		return true, nil
+
+	case "enter":
+		if it, ok := m.linksModal.list.SelectedItem().(linkItem); ok {
+			if it.exists {
+				// Open existing note
+				m.currentNotePath = it.path
+				m.currentNoteRaw = loadMarkdownRaw(it.path)
+				content := loadMarkdownWithLinks(it.path, m.rootDir)
+				m.viewport.SetContent(content)
+				m.showPreview = true
+				m.trackRecentFile(it.path)
+
+				// Navigate to the note's directory
+				targetDir := filepath.Dir(it.path)
+				m.setDir(targetDir)
+
+				// Select the file in the list
+				for i, item := range m.baseItems {
+					if fi, ok := item.(fileItem); ok && fi.path == it.path {
+						m.list.Select(i)
+						break
+					}
+				}
+			} else {
+				// Create new note
+				noteName := it.name
+				if filepath.Ext(noteName) == "" {
+					noteName += ".md"
+				}
+				newPath := filepath.Join(m.currentDir, noteName)
+
+				// Create with title
+				title := strings.TrimSuffix(filepath.Base(noteName), filepath.Ext(noteName))
+				content := fmt.Sprintf("# %s\n\n", title)
+				err := os.WriteFile(newPath, []byte(content), 0644)
+				if err != nil {
+					cmd := m.statusBar.SetMessage(fmt.Sprintf("Erreur: %v", err), 3*time.Second)
+					return true, cmd
+				}
+
+				// Refresh directory and open the new note
+				m.setDir(m.currentDir)
+				for i, item := range m.baseItems {
+					if fi, ok := item.(fileItem); ok && fi.path == newPath {
+						m.list.Select(i)
+						m.currentNotePath = newPath
+						m.currentNoteRaw = loadMarkdownRaw(newPath)
+						noteContent := loadMarkdownWithLinks(newPath, m.rootDir)
+						m.viewport.SetContent(noteContent)
+						m.showPreview = true
+						m.trackRecentFile(newPath)
+						break
+					}
+				}
+			}
+
+			m.showLinksModal = false
+			return true, nil
+		}
+	}
+
+	var modalCmd tea.Cmd
+	m.linksModal, modalCmd = m.linksModal.Update(msg)
 	return true, modalCmd
 }

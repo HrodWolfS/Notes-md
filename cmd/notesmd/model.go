@@ -128,6 +128,8 @@ type model struct {
 	recentModal        recentFilesModal
 	showBookmarksModal bool
 	bookmarksModal     bookmarksModal
+	showLinksModal     bool
+	linksModal         linksModal
 
 	// configuration & persistence
 	config      *Config

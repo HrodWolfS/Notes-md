@@ -538,7 +538,7 @@ e: éditer | c: copier | p: coller | y: path | Y: contenu`
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
 		Render("Organisation:")
-	orgContent := `b: bookmark | B: voir bookmarks | Ctrl+R: récents`
+	orgContent := `b: bookmark | B: voir bookmarks | Ctrl+R: récents | L: liens wiki`
 
 	// Filters section
 	filterTitle := lipgloss.NewStyle().
@@ -582,6 +582,90 @@ e: éditer | c: copier | p: coller | y: path | Y: contenu`
 		BorderForeground(lipgloss.Color("81")). // Light blue
 		Padding(0, 1).
 		Width(68)
+
+	return modalStyle.Render(content)
+}
+
+// ========== Links Modal ==========
+
+type linkItem struct {
+	name   string
+	path   string
+	exists bool
+}
+
+func (l linkItem) Title() string {
+	if l.exists {
+		return "🔗 " + l.name
+	}
+	return "❓ " + l.name + " (n'existe pas)"
+}
+
+func (l linkItem) Description() string {
+	if l.exists {
+		return l.path
+	}
+	return "Appuyez sur Enter pour créer cette note"
+}
+
+func (l linkItem) FilterValue() string {
+	return l.name
+}
+
+type linksModal struct {
+	list blist.Model
+}
+
+func newLinksModal(links []string, rootDir string, width, height int) linksModal {
+	items := make([]blist.Item, 0, len(links))
+	for _, linkName := range links {
+		notePath := findNoteByName(linkName, rootDir)
+		items = append(items, linkItem{
+			name:   linkName,
+			path:   notePath,
+			exists: notePath != "",
+		})
+	}
+
+	l := blist.New(items, blist.NewDefaultDelegate(), width-10, height-10)
+	l.Title = "Liens dans cette note"
+	l.SetShowHelp(false)
+
+	return linksModal{
+		list: l,
+	}
+}
+
+func (m linksModal) Update(msg tea.Msg) (linksModal, tea.Cmd) {
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
+}
+
+func (m linksModal) View() string {
+	title := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("81")).
+		Bold(true).
+		Render("🔗 Liens Wiki")
+
+	listView := m.list.View()
+
+	helpText := helpStyle.Render("Enter: ouvrir/créer • Esc: fermer")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		listView,
+		"",
+		helpText,
+	)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("81")).
+		Padding(1, 2).
+		Width(70)
 
 	return modalStyle.Render(content)
 }

@@ -124,3 +124,142 @@ func highlightMatches(content string, query string) string {
 
 	return result.String()
 }
+
+// parseWikiLinks extracts all wiki-style links [[...]] from content
+func parseWikiLinks(content string) []string {
+	var links []string
+	seen := make(map[string]bool)
+
+	// Find all [[...]] patterns
+	start := 0
+	for {
+		openIdx := strings.Index(content[start:], "[[")
+		if openIdx == -1 {
+			break
+		}
+		openIdx += start
+
+		closeIdx := strings.Index(content[openIdx:], "]]")
+		if closeIdx == -1 {
+			break
+		}
+		closeIdx += openIdx
+
+		// Extract link text
+		linkText := content[openIdx+2 : closeIdx]
+		linkText = strings.TrimSpace(linkText)
+
+		// Add to list if not already seen
+		if linkText != "" && !seen[linkText] {
+			links = append(links, linkText)
+			seen[linkText] = true
+		}
+
+		start = closeIdx + 2
+	}
+
+	return links
+}
+
+// findNoteByName searches for a note file by name in rootDir and subdirectories
+func findNoteByName(name string, rootDir string) string {
+	// Add .md extension if not present
+	if filepath.Ext(name) == "" {
+		name += ".md"
+	}
+
+	var foundPath string
+
+	// Walk through all files
+	filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		// Check if filename matches (case-insensitive)
+		if strings.EqualFold(filepath.Base(path), name) {
+			foundPath = path
+			return filepath.SkipAll // Stop searching once found
+		}
+
+		return nil
+	})
+
+	return foundPath
+}
+
+// convertWikiLinks converts [[Note]] to markdown links [Note](path)
+func convertWikiLinks(content string, rootDir string) string {
+	result := content
+
+	// Find all [[...]] patterns and replace them
+	start := 0
+	for {
+		openIdx := strings.Index(result[start:], "[[")
+		if openIdx == -1 {
+			break
+		}
+		openIdx += start
+
+		closeIdx := strings.Index(result[openIdx:], "]]")
+		if closeIdx == -1 {
+			break
+		}
+		closeIdx += openIdx
+
+		// Extract link text
+		linkText := result[openIdx+2 : closeIdx]
+		linkText = strings.TrimSpace(linkText)
+
+		if linkText != "" {
+			// Find the actual file
+			notePath := findNoteByName(linkText, rootDir)
+
+			// Create markdown link with special marker for styling
+			var replacement string
+			if notePath != "" {
+				// Use emoji to make it stand out
+				replacement = fmt.Sprintf("🔗 [**%s**](%s)", linkText, notePath)
+			} else {
+				// Non-existent note - different styling
+				replacement = fmt.Sprintf("🔗 [**%s**](#missing)", linkText)
+			}
+
+			// Replace [[...]] with markdown link
+			result = result[:openIdx] + replacement + result[closeIdx+2:]
+			start = openIdx + len(replacement)
+		} else {
+			start = closeIdx + 2
+		}
+	}
+
+	return result
+}
+
+// loadMarkdownWithLinks loads markdown and converts wiki-style links
+func loadMarkdownWithLinks(path string, rootDir string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Sprintf("Erreur de lecture du fichier:\n%s\n\n%v", path, err)
+	}
+
+	content := string(data)
+
+	if filepath.Ext(path) != ".md" {
+		return content
+	}
+
+	// Convert wiki links before rendering
+	contentWithLinks := convertWikiLinks(content, rootDir)
+
+	out, err := glamour.Render(contentWithLinks, markdownTheme)
+	if err != nil {
+		return fmt.Sprintf("Erreur de rendu Markdown pour %s:\n%v", path, err)
+	}
+
+	return out
+}

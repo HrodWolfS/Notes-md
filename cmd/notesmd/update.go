@@ -168,6 +168,13 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if m.showLinksModal {
+		handled, cmd := m.handleLinksModalKey(msg)
+		if handled {
+			return m, cmd
+		}
+	}
+
 	if m.searchActive {
 		handled, cmd := m.handleSearchKey(msg)
 		if handled {
@@ -430,6 +437,24 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.lastKey = ""
 		return m, nil
 
+	case "L":
+		// Show links in current note
+		if m.currentNotePath != "" {
+			// Parse links from raw content
+			rawContent := loadMarkdownRaw(m.currentNotePath)
+			links := parseWikiLinks(rawContent)
+
+			if len(links) > 0 {
+				m.showLinksModal = true
+				m.linksModal = newLinksModal(links, m.rootDir, m.width, m.height)
+			} else {
+				cmd := m.statusBar.SetMessage("Aucun lien trouvé dans cette note", 2*time.Second)
+				return m, cmd
+			}
+		}
+		m.lastKey = ""
+		return m, nil
+
 	case "ctrl+r":
 		// Show recent files
 		m.showRecentModal = true
@@ -464,7 +489,7 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if currentIndex != m.lastSelectedIndex {
 			m.lastSelectedIndex = currentIndex
 			if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
-				content := loadMarkdown(it.path)
+				content := loadMarkdownWithLinks(it.path, m.rootDir)
 				m.viewport.SetContent(content)
 				m.showPreview = true
 				m.currentNotePath = it.path
@@ -529,7 +554,7 @@ func (m *model) handleNoteSearchKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) 
 		// Cancel search and restore original content
 		m.searchInNoteActive = false
 		if m.currentNotePath != "" {
-			content := loadMarkdown(m.currentNotePath)
+			content := loadMarkdownWithLinks(m.currentNotePath, m.rootDir)
 			m.viewport.SetContent(content)
 		}
 		m.noteSearchQuery = ""
