@@ -138,7 +138,7 @@ brews:
     homepage: "https://github.com/HrodWolfS/Notes-md"
     description: "Terminal-based Markdown notes browser with real-time preview"
     license: "MIT"
-    skip_upload: auto
+    skip_upload: true  # Désactivé jusqu'à création du repo homebrew-tap
     install: |
       bin.install "nmd"
     test: |
