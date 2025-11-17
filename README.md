@@ -1,5 +1,6 @@
 # NotesMD 📝
 
+[![Release](https://img.shields.io/github/v/release/HrodWolfS/Notes-md)](https://github.com/HrodWolfS/Notes-md/releases/latest)
 [![CI](https://github.com/HrodWolfS/Notes-md/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/HrodWolfS/Notes-md/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/HrodWolfS/Notes-md)](https://goreportcard.com/report/github.com/HrodWolfS/Notes-md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
