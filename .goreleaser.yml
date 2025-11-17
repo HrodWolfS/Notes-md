@@ -100,8 +100,8 @@ changelog:
 
 release:
   github:
-    owner: hrodwolf
-    name: notesmd
+    owner: HrodWolfS
+    name: Notes-md
   draft: false
   prerelease: auto
   mode: replace
@@ -116,26 +116,26 @@ release:
     ### Quick Install
     ```bash
     # Linux/macOS
-    curl -sSL https://raw.githubusercontent.com/hrodwolf/notesmd/main/install.sh | bash
+    curl -sSL https://raw.githubusercontent.com/HrodWolfS/Notes-md/main/install.sh | bash
 
     # Or via Go
-    go install github.com/hrodwolf/notesmd/cmd/notesmd@latest
+    go install github.com/HrodWolfS/Notes-md/cmd/notesmd@latest
     ```
 
     ### Binary Download
     Download the appropriate binary for your platform from the assets below.
 
     ---
-    **Full Changelog**: https://github.com/hrodwolf/notesmd/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/HrodWolfS/Notes-md/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 # Homebrew formula (optional, for later)
 brews:
   - name: nmd
     repository:
-      owner: hrodwolf
+      owner: HrodWolfS
       name: homebrew-tap
       branch: main
-    homepage: "https://github.com/hrodwolf/notesmd"
+    homepage: "https://github.com/HrodWolfS/Notes-md"
     description: "Terminal-based Markdown notes browser with real-time preview"
     license: "MIT"
     skip_upload: auto
