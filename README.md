@@ -24,8 +24,10 @@ NotesMD est un explorateur de fichiers interactif spécialisé pour les notes Ma
 
 - Interface TUI en deux colonnes (explorateur 30% + preview 70%)
 - Prévisualisation Markdown temps réel avec Glamour et navigation Vim (`j`/`k`, `gg`, `G`, `Ctrl+d/u`)
+- **Liens wiki style Obsidian** : `[[Note]]` pour lier des notes entre elles (touche `L` pour voir tous les liens)
+- **Double éditeur** : éditeur inline rapide (`E`) ou externe (`e`) avec `$EDITOR`
 - Recherche fuzzy (`/`) dans noms + recherche in-note (`F`) avec highlight ⚡
-- CRUD via modals (`n`, `r`, `D`) + édition externe (`e`) avec `$EDITOR`
+- CRUD via modals (`n`, `r`, `D`) avec confirmations
 - Signets (`b`, `B`), fichiers récents (`Ctrl+R`) et copie clipboard (`y`, `Y`)
 - Thème cyclable (`t`), filtres (`.md only`, fichiers cachés, tri) et écran d'accueil ASCII
 
@@ -37,11 +39,14 @@ NotesMD est un explorateur de fichiers interactif spécialisé pour les notes Ma
 go install github.com/HrodWolfS/Notes-md/cmd/notesmd@latest
 ```
 
-Le binaire `nmd` est déposé dans `$GOPATH/bin` (souvent `~/go/bin`). Ajoutez ce dossier au `PATH` si nécessaire :
+Le binaire `notesmd` est déposé dans `$GOPATH/bin` (souvent `~/go/bin`). Ajoutez ce dossier au `PATH` si nécessaire :
 
 ```bash
 # ---- NotesMD ----
 export PATH="$(go env GOPATH)/bin:$PATH"   # à placer dans ~/.zshrc ou ~/.bashrc
+
+# Alias optionnel pour raccourcir la commande
+alias nmd='notesmd'
 ```
 
 ### Installation manuelle
@@ -74,6 +79,8 @@ make install-user    # installe dans ~/bin/nmd (sans sudo)
 ### Vérifier l'installation
 
 ```bash
+notesmd
+# ou avec l'alias
 nmd
 ```
 
@@ -83,13 +90,14 @@ nmd
 
 ```bash
 # Lancer dans le répertoire courant
-nmd
+notesmd
+# ou avec l'alias : nmd
 
 # Lancer dans un répertoire spécifique
-nmd ~/Documents/notes
+notesmd ~/Documents/notes
 
 # Lancer avec un dossier de notes
-nmd ~/obsidian-vault
+notesmd ~/obsidian-vault
 ```
 
 ### Navigation
@@ -114,9 +122,11 @@ nmd ~/obsidian-vault
 | `N`    | Nouveau dossier               |
 | `D`    | Supprimer (avec confirmation) |
 | `r`    | Renommer                      |
+| `E`    | Éditeur inline rapide         |
 | `e`    | Éditer dans $EDITOR           |
 | `c`    | Copier                        |
 | `p`    | Coller                        |
+| `L`    | Voir liens wiki dans la note  |
 
 ### Recherche
 
@@ -248,6 +258,8 @@ Utilisez les [GitHub Issues](https://github.com/hrodwolf/notesmd/issues) pour ra
 
 ## 📝 Roadmap
 
+### ✅ Implémenté
+
 - [x] Navigation de base et prévisualisation
 - [x] Recherche fuzzy dans noms de fichiers
 - [x] Recherche in-note avec highlight
@@ -255,12 +267,19 @@ Utilisez les [GitHub Issues](https://github.com/hrodwolf/notesmd/issues) pour ra
 - [x] Gestion de fichiers (créer/renommer/supprimer)
 - [x] Persistance de configuration
 - [x] Thèmes multiples
-- [ ] Synchronisation cloud (Dropbox, iCloud)
+- [x] **Liens wiki `[[Note]]` style Obsidian**
+- [x] **Éditeur inline rapide (E) + externe (e)**
+
+### 🔮 Fonctionnalités futures
+
+- [ ] **Backlinks** : voir quelles notes pointent vers la note actuelle
+- [ ] **Graph view** : visualiser les connexions entre notes
+- [ ] **Tags avec auto-complétion** : `#tag` pour organiser les notes
+- [ ] **Full-text search** : recherche dans le contenu de toutes les notes
 - [ ] Support Git (status, diff dans preview)
 - [ ] Export (PDF, HTML)
-- [ ] Tags et métadonnées
-- [ ] Templates de notes
-- [ ] Plugin system
+- [ ] Templates de notes personnalisables
+- [ ] Synchronisation cloud (optionnelle)
 
 ## 📜 Licence
 
@@ -275,7 +294,11 @@ Construit avec :
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - Styles terminal
 - [Glamour](https://github.com/charmbracelet/glamour) - Rendu Markdown
 
-Inspiré par des outils comme [Obsidian](https://obsidian.md/), [Notion](https://notion.so), et [Ranger](https://github.com/ranger/ranger).
+Inspiré par :
+
+- [Obsidian](https://obsidian.md/) - Pour la structure et les liens wiki `[[Note]]`
+- [Apple Notes](https://www.icloud.com/notes) - Pour la simplicité et l'expérience utilisateur
+- [Ranger](https://github.com/ranger/ranger) - Pour la navigation terminal efficace
 
 ## 👤 Auteur
 
