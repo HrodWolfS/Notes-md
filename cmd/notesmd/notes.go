@@ -217,7 +217,7 @@ func (m *model) handleEditModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) {
 
 		// Refresh the preview
 		m.currentNoteRaw = newContent
-		content := loadMarkdownWithLinks(m.editModal.notePath, m.rootDir)
+		content := loadMarkdownWithLinks(m.editModal.notePath, m.rootDir, m.viewport.Width)
 		m.viewport.SetContent(content)
 
 		// Close modal and show success message
@@ -245,7 +245,7 @@ func (m *model) handleLinksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) 
 				// Open existing note
 				m.currentNotePath = it.path
 				m.currentNoteRaw = loadMarkdownRaw(it.path)
-				content := loadMarkdownWithLinks(it.path, m.rootDir)
+				content := loadMarkdownWithLinks(it.path, m.rootDir, m.viewport.Width)
 				m.viewport.SetContent(content)
 				m.showPreview = true
 				m.trackRecentFile(it.path)
@@ -285,7 +285,7 @@ func (m *model) handleLinksModalKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) 
 						m.list.Select(i)
 						m.currentNotePath = newPath
 						m.currentNoteRaw = loadMarkdownRaw(newPath)
-						noteContent := loadMarkdownWithLinks(newPath, m.rootDir)
+						noteContent := loadMarkdownWithLinks(newPath, m.rootDir, m.viewport.Width)
 						m.viewport.SetContent(noteContent)
 						m.showPreview = true
 						m.trackRecentFile(newPath)

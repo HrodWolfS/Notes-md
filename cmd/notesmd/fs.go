@@ -39,8 +39,8 @@ func readDir(dir string) []blist.Item {
 	return res
 }
 
-// loadMarkdown loads and renders a Markdown file
-func loadMarkdown(path string) string {
+// loadMarkdown loads and renders a Markdown file with word wrap
+func loadMarkdown(path string, width int) string {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Sprintf("Erreur de lecture du fichier:\n%s\n\n%v", path, err)
@@ -50,7 +50,16 @@ func loadMarkdown(path string) string {
 		return string(data)
 	}
 
-	out, err := glamour.Render(string(data), markdownTheme)
+	// Create renderer with word wrap at specified width
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithStylePath(markdownTheme),
+		glamour.WithWordWrap(width),
+	)
+	if err != nil {
+		return fmt.Sprintf("Erreur de création du renderer Markdown:\n%v", err)
+	}
+
+	out, err := renderer.Render(string(data))
 	if err != nil {
 		return fmt.Sprintf("Erreur de rendu Markdown pour %s:\n%v", path, err)
 	}
@@ -68,7 +77,7 @@ func loadMarkdownRaw(path string) string {
 }
 
 // loadMarkdownWithHighlight loads and renders markdown with search highlights
-func loadMarkdownWithHighlight(path string, query string) string {
+func loadMarkdownWithHighlight(path string, query string, width int) string {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Sprintf("Erreur de lecture du fichier:\n%s\n\n%v", path, err)
@@ -83,7 +92,16 @@ func loadMarkdownWithHighlight(path string, query string) string {
 	// Highlight matches in raw markdown before rendering
 	highlighted := highlightMatches(content, query)
 
-	out, err := glamour.Render(highlighted, markdownTheme)
+	// Create renderer with word wrap
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithStylePath(markdownTheme),
+		glamour.WithWordWrap(width),
+	)
+	if err != nil {
+		return fmt.Sprintf("Erreur de création du renderer Markdown:\n%v", err)
+	}
+
+	out, err := renderer.Render(highlighted)
 	if err != nil {
 		return fmt.Sprintf("Erreur de rendu Markdown pour %s:\n%v", path, err)
 	}
@@ -241,7 +259,7 @@ func convertWikiLinks(content string, rootDir string) string {
 }
 
 // loadMarkdownWithLinks loads markdown and converts wiki-style links
-func loadMarkdownWithLinks(path string, rootDir string) string {
+func loadMarkdownWithLinks(path string, rootDir string, width int) string {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Sprintf("Erreur de lecture du fichier:\n%s\n\n%v", path, err)
@@ -256,7 +274,16 @@ func loadMarkdownWithLinks(path string, rootDir string) string {
 	// Convert wiki links before rendering
 	contentWithLinks := convertWikiLinks(content, rootDir)
 
-	out, err := glamour.Render(contentWithLinks, markdownTheme)
+	// Create renderer with word wrap
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithStylePath(markdownTheme),
+		glamour.WithWordWrap(width),
+	)
+	if err != nil {
+		return fmt.Sprintf("Erreur de création du renderer Markdown:\n%v", err)
+	}
+
+	out, err := renderer.Render(contentWithLinks)
 	if err != nil {
 		return fmt.Sprintf("Erreur de rendu Markdown pour %s:\n%v", path, err)
 	}

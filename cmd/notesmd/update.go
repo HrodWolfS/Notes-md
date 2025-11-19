@@ -36,7 +36,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case editorDoneMsg:
 		if m.mode == modeBrowser && m.showPreview {
 			if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
-				m.viewport.SetContent(loadMarkdown(it.path))
+				m.viewport.SetContent(loadMarkdown(it.path, m.viewport.Width))
 			}
 		}
 		return m, nil
@@ -506,7 +506,7 @@ func (m model) updateBrowser(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if currentIndex != m.lastSelectedIndex {
 			m.lastSelectedIndex = currentIndex
 			if it, ok := m.list.SelectedItem().(fileItem); ok && !it.isDir {
-				content := loadMarkdownWithLinks(it.path, m.rootDir)
+				content := loadMarkdownWithLinks(it.path, m.rootDir, m.viewport.Width)
 				m.viewport.SetContent(content)
 				m.showPreview = true
 				m.currentNotePath = it.path
@@ -571,7 +571,7 @@ func (m *model) handleNoteSearchKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) 
 		// Cancel search and restore original content
 		m.searchInNoteActive = false
 		if m.currentNotePath != "" {
-			content := loadMarkdownWithLinks(m.currentNotePath, m.rootDir)
+			content := loadMarkdownWithLinks(m.currentNotePath, m.rootDir, m.viewport.Width)
 			m.viewport.SetContent(content)
 		}
 		m.noteSearchQuery = ""
@@ -582,7 +582,7 @@ func (m *model) handleNoteSearchKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) 
 			m.noteSearchQuery = m.noteSearchQuery[:len(m.noteSearchQuery)-1]
 			// Live update on backspace
 			if m.currentNotePath != "" {
-				content := loadMarkdownWithHighlight(m.currentNotePath, m.noteSearchQuery)
+				content := loadMarkdownWithHighlight(m.currentNotePath, m.noteSearchQuery, m.viewport.Width)
 				m.viewport.SetContent(content)
 			}
 		}
@@ -600,7 +600,7 @@ func (m *model) handleNoteSearchKey(msg tea.KeyMsg) (handled bool, cmd tea.Cmd) 
 		m.noteSearchQuery += s
 		// Live update as user types
 		if m.currentNotePath != "" {
-			content := loadMarkdownWithHighlight(m.currentNotePath, m.noteSearchQuery)
+			content := loadMarkdownWithHighlight(m.currentNotePath, m.noteSearchQuery, m.viewport.Width)
 			m.viewport.SetContent(content)
 		}
 		return true, nil
